@@ -13,7 +13,8 @@
   padding-left: 20px;
 }
 
-/* User Favorites */
-.favorite-star {
-  color: yellow;
+/* User Favorites and Trash Can */
+.fa-star,
+.fa-trash-alt {
+  cursor: pointer;
 }
