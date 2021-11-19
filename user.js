@@ -115,17 +115,29 @@ function updateUIOnUserLogin() {
   updateNavOnLogin();
 }
 
-$(document).on("click", ".star", (e) => {
+$(document).on("click", ".star", async (e) => {
   e.preventDefault();
 
   let $target = $(e.target),
     $parentListItem = $target.parents("li"),
-    storyId = $parentListItem.attr("id");
+    storyId = $parentListItem.attr("id"),
+    // boolean to see if a story is favorited already
+    isCurrentlyFavorited = $parentListItem.find(".fa-star").hasClass("fas");
 
-  // 2 - run to user class to favorite this story
-  const favoriteWasSuccessfull = currentUser.favoriteStory(storyId);
-  if (favoriteWasSuccessfull) {
-    // add a css class to the star to make it have a color
-    // favoriteWasSuccessfull.addclass("favorite-star");
+  if (isCurrentlyFavorited) {
+    // successfully runs to API to change UI of favorited item (takes care of unfavoriting)
+    const success = await currentUser.unFavoriteStory(storyId);
+
+    // takes care of UI
+    if (success) {
+      $parentListItem.find(".fa-star").removeClass("fas").addClass("far");
+    }
+  } else {
+    // takes care of API so that an item is favorited in the DB
+    const success = await currentUser.favoriteStory(storyId);
+    // takes care of UI of favoriting a story
+    if (success) {
+      $parentListItem.find(".fa-star").removeClass("far").addClass("fas");
+    }
   }
 });

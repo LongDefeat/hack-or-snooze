@@ -6,10 +6,11 @@
 
 /** Show main list of all stories when click site name */
 
-function navAllStories(evt) {
+async function navAllStories(evt) {
   console.debug("navAllStories", evt);
   hidePageComponents();
-  putStoriesOnPage();
+  const storyList = await StoryList.getStories();
+  putStoriesOnPage(storyList.stories);
 }
 
 $body.on("click", "#nav-all", navAllStories);

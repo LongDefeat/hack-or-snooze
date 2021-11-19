@@ -9,7 +9,7 @@ async function getAndShowStoriesOnStart() {
   storyList = await StoryList.getStories();
   $storiesLoadingMsg.remove();
 
-  putStoriesOnPage();
+  putStoriesOnPage(storyList.stories);
 }
 
 /**
@@ -19,22 +19,38 @@ async function getAndShowStoriesOnStart() {
  * Returns the markup for the story.
  */
 
-function generateStoryMarkup(story) {
+function generateStoryMarkup(story, isDisplayOwnStories) {
   // console.debug("generateStoryMarkup", story);
 
   const hostName = story.getHostName();
+  let trashHTML = "";
   let favoriteHTML = "";
 
   if (currentUser) {
+    if (isDisplayOwnStories) {
+      trashHTML = `
+        <span class="trash-can">
+          <i class="fas fa-trash-alt"></i>
+        </span>
+      `;
+    }
+
+    const currentStoryIsFavorited = currentUser.favorites.filter((favStory) => {
+      return favStory.storyId === story.storyId;
+    });
+    // if favorited, switch between classes for far and fas; use .length because filter returns an array
     favoriteHTML = `
       <span class="star">
-        <i class="fas fa-star"></i>
+        <i class="${
+          currentStoryIsFavorited.length ? "fas" : "far"
+        } fa-star"></i>
       </span>
     `;
   }
 
   return $(`
       <li id="${story.storyId}">
+        ${trashHTML}
         ${favoriteHTML}
         <a href="${story.url}" target="a_blank" class="story-link">
           ${story.title}
@@ -48,21 +64,23 @@ function generateStoryMarkup(story) {
 
 /** Gets list of stories from server, generates their HTML, and puts on page. */
 
-function putStoriesOnPage() {
+//isDisplayOwnStories = boolean to display own stories so we can add UI to a story if it IS our own stories
+function putStoriesOnPage(stories, isDisplayOwnStories) {
   console.debug("putStoriesOnPage");
 
   $allStoriesList.empty();
 
   // loop through all of our stories and generate HTML for them
-  for (let story of storyList.stories) {
-    const $story = generateStoryMarkup(story);
+  for (let story of stories) {
+    const $story = generateStoryMarkup(story, isDisplayOwnStories);
     $allStoriesList.append($story);
   }
 
   $allStoriesList.show();
 }
 
-async function submitNewStoryOnForm() {
+async function submitNewStoryOnForm(e) {
+  e.preventDefault();
   const title = $("#create-title").val();
   const url = $("#create-url").val();
   const author = $("#create-author").val();
@@ -79,3 +97,28 @@ async function submitNewStoryOnForm() {
 }
 
 $submitForm.on("submit", submitStoryOnNav);
+
+/* My stories */
+// evt listener to listen for a click on my stories1
+$(document).on("click", "#nav-my-stories", (e) => {
+  e.preventDefault();
+  putStoriesOnPage(currentUser.ownStories, true);
+});
+// removing my stories on trash can
+$(document).on("click", ".trash-can", async (e) => {
+  e.preventDefault();
+
+  let $target = $(e.target),
+    $parentListItem = $target.parents("li"),
+    storyId = $parentListItem.attr("id");
+
+  await storyList.removeStory(currentUser, storyId);
+
+  putStoriesOnPage(currentUser.ownStories, true);
+});
+
+/* Favorite Nav Bar */
+$(document).on("click", "#nav-favorites", (e) => {
+  e.preventDefault();
+  putStoriesOnPage(currentUser.favorites);
+});

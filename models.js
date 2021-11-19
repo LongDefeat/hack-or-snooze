@@ -93,6 +93,28 @@ class StoryList {
 
     return newStory;
   }
+
+  async removeStory(user, storyId) {
+    // https://hack-or-snooze-v3.herokuapp.com/stories/{storyId}}
+    // method = DELETE
+    const response = await axios({
+      method: "DELETE",
+      url: `${BASE_URL}/stories/${storyId}`,
+      data: {
+        token: user.loginToken,
+      },
+    });
+
+    this.stories = this.stories.filter((story) => story.storyId !== storyId);
+
+    // filter through stories currently there and getting all the ones that we DON'T want to delete ; second one removes it out of favorites, too if it was my story
+    user.ownStories = user.ownStories.filter(
+      (ownStory) => ownStory.storyId !== storyId
+    );
+    user.favorites = user.favorites.filter(
+      (favStory) => favStory.storyId !== storyId
+    );
+  }
 }
 
 /******************************************************************************
@@ -213,16 +235,31 @@ class User {
   }
 
   async favoriteStory(story_id) {
-    console.log("adding a favorite story");
     const response = await axios({
       url: `${BASE_URL}/users/${this.username}/favorites/${story_id}`,
       method: "POST",
       params: {
-        token: this.token,
+        token: this.loginToken,
       },
     });
 
-    if (response && response.data.message === "Favorite Added!") {
+    if (response && response.status === 200) {
+      return true;
+    }
+
+    return false;
+  }
+
+  async unFavoriteStory(story_id) {
+    const response = await axios({
+      url: `${BASE_URL}/users/${this.username}/favorites/${story_id}`,
+      method: "DELETE",
+      params: {
+        token: this.loginToken,
+      },
+    });
+
+    if (response && response.status === 200) {
       return true;
     }
 
